@@ -1,0 +1,817 @@
+Red Wine Quality by Hardeep Johar
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+library(dplyr)
+library(GGally)
+library(psych)
+library(memisc)
+library(gridExtra)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Load_the_Data}
+# Load the Data
+wine <- read.csv('wineQualityReds.csv', header = T, row.names = 1, 
+                 check.names = F)
+
+```
+
+**Summary**: We will explore 1,559 red wines with 11 variables on the
+chemical properties of the wine. 3 wine experts rated the quality of each
+wine, providing a rating between 0 (very bad) and 10 (excellent).
+
+# Univariate Plots Section
+
+Summary of the 11 variables we will be exploring.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots}
+summary(wine)
+```
+
+Structure of the 11 variables we will be exploring.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+str(wine)
+```
+
+Looks like we need to turn Quality into a factor.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Turn Quality into a factor
+wine$quality <- as.factor(wine$quality)
+str(wine$quality)
+```
+
+Great, now let's look at its frequency.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = quality), data = wine) +
+  geom_histogram(stat ="count", color = "Green", fill = "yellow") +
+  scale_x_discrete(name = "Quality Rating") +
+  scale_y_continuous(name = "Count") +
+  ggtitle("Histogram of Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0)) +
+  theme(axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 12))
+
+```
+
+From above we can see Quality has a mean of 5.636 and a median of 6.
+As expected, Quality works out to have a normal distribtion with more wines
+having an average rating, with ratings decreasing in frequency towards the
+extremities.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tmpdata <- subset(wine, select = -c(quality))
+w <- melt(tmpdata)
+ggplot(w, aes(x = value)) + 
+    facet_wrap(~variable, scales = "free") + 
+    geom_histogram(color = "Blue", fill = "Orange") +
+    labs(x = "", y = "Count") +
+    ggtitle("Histograms of 11 Variables affecting Quality Rating") +
+    theme(axis.title.x = element_text(face = "bold", colour = "#990000", 
+                                      size = 8),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, size = 8),
+          axis.title.y = element_text(face = "bold", colour = "#990000",
+                                      size = 8),
+          axis.text.y = element_text(size = 8))
+
+```
+
+In order to better visualize data which has a long tail such as residual sugar, 
+chlorides, free sulfer dioxide, total sulfer dioxide and sulphates, let's
+do a log10 transformation.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Residual.sugar.1 <- ggplot(wine, aes(x = 1, y = residual.sugar)) + 
+                      geom_jitter(alpha = 0.1) +
+                      geom_boxplot(alpha = 0.2, color = 'red') +
+                      labs(x = "", y = "Residual Sugar") +
+                      ggtitle("Boxplot of Residual Sugar")
+Residual.sugar.2 <- ggplot(wine, aes(x = residual.sugar)) + 
+                      geom_histogram(bins = 30, color = "Blue",
+                                     fill = "Orange") +
+                      labs(x = "Residual Sugar (Log10)", y = "Count") +
+                      ggtitle("Log 10 Histogram of Residual Sugar") +
+                      scale_x_log10(breaks = c(.9, 2.2, 2.539, 15.5)) +
+                      theme(axis.title.x = element_text(face = "bold", 
+                                                        colour = "#990000", 
+                                                        size = 8),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                                  size = 8),
+                      axis.title.y = element_text(face = "bold", 
+                                                  colour = "#990000", 
+                                                  size = 8),
+                      axis.text.y = element_text(size = 8))
+grid.arrange(Residual.sugar.1, Residual.sugar.2, ncol = 2)
+summary(wine$residual.sugar)
+```
+
+Residual Sugar has a mean of 2.200 and median of 2.539 g / dm^3. The above 
+historgram has a normal distribtion. Outliers, as demonstrated in the box plot,
+created a positively skewed distribiton and a long tail in the earlier 
+historgram before the Log10 transformation was done.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Chlorides.1 <- ggplot(wine, aes(x = 1, y = chlorides)) + 
+                      geom_jitter(alpha = 0.1) +
+                      geom_boxplot(alpha = 0.2, color = 'red') +
+                      labs(x = "", y = "Chlorides") +
+                      ggtitle("Boxplot of Chlorides")
+Chlorides.2 <- ggplot(wine, aes( x = chlorides)) + 
+                      geom_histogram(bins = 30, color = "Blue", 
+                                     fill = "Orange") +
+                      labs(x = "Chlorides (Log10)", y = "Count") +
+                      ggtitle("Log 10 Histogram of Chlorides") +
+                      scale_x_log10(breaks = c(.012, .035, .079,
+                                             .0875, .35, .611)) +
+                      theme(axis.title.x = element_text(face = "bold", 
+                                                        colour = "#990000", 
+                                                        size = 8),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                                  size = 8),
+                      axis.title.y = element_text(face = "bold", 
+                                                  colour = "#990000", 
+                                                  size = 8),
+                      axis.text.y = element_text(size = 8))
+grid.arrange(Chlorides.1, Chlorides.2, ncol = 2)
+summary(wine$chlorides)
+```
+
+Chlorides have a mean of 0.087 and a median of0.079 g / dm^3. The above 
+historgram has a normal distribtion. Outliers, as demonstrated in the box plot,
+created a positively skewed distribiton and a long tail in the earlier 
+historgram before the Log10 transformation was done.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Free.sulfur.dioxide.1 <- ggplot(wine, aes(x = 1, y = free.sulfur.dioxide)) + 
+                      geom_jitter(alpha = 0.1) +
+                      geom_boxplot(alpha = 0.2, color = 'red') +
+                      labs(x = "", y = "Free Sulfer Dioxide") +
+                      ggtitle("Boxplot of Free Sulfer Dioxide")
+Free.sulfur.dioxide.2 <- ggplot(wine, aes(x = free.sulfur.dioxide)) + 
+                      geom_histogram(bins = 30, color = "Blue",
+                                     fill = "Orange") +
+                      labs(x = "Free Sulfer Dioxide (Log10)", y = "Count") +
+                      ggtitle("Log 10 Histogram of Free Sulfer Dioxide") +
+                      scale_x_log10(breaks = c(1, 14, 15.87, 72)) +
+                      theme(axis.title.x = element_text(face = "bold", 
+                                                        colour = "#990000", 
+                                                        size = 8),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                                  size = 8),
+                      axis.title.y = element_text(face = "bold", 
+                                                  colour = "#990000", 
+                                                  size = 8),
+                      axis.text.y = element_text(size = 8))
+grid.arrange(Free.sulfur.dioxide.1, Free.sulfur.dioxide.2, ncol = 2)
+summary(wine$free.sulfur.dioxide)
+```
+
+Free Sulfer Dioxide has a mean of 15.87 and a median of 14.00 mg /dm^3. The 
+above historgram has a slightly bimodal distribtion. Outliers, as demonstrated
+in the box plot, created a positively skewed distribiton and a long tail in the
+earlier historgram before the Log10 transformation was done.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Total.sulfur.dioxide.1 <- ggplot(wine, aes(x = 1, y = total.sulfur.dioxide)) + 
+                      geom_jitter(alpha = 0.1) +
+                      geom_boxplot(alpha = 0.2, color = 'red' ) +
+                      labs(x = "", y = "Total Sulfer Dioxide") +
+                      ggtitle("Boxplot of Total Sulfer Dioxide")
+Total.sulfur.dioxide.2 <- ggplot(wine, aes(x = total.sulfur.dioxide)) + 
+                      geom_histogram(bins = 30, color = "Blue",
+                                     fill = "Orange") +
+                      labs(x = "Total Sulfer Dioxide (Log10)", y = "Count") +
+                      ggtitle("Log 10 Histogram of Total Sulfer Dioxide") +
+                      scale_x_log10(breaks = c(6, 38, 46.47, 28)) +
+                      theme(axis.title.x = element_text(face = "bold", 
+                                                        colour = "#990000", 
+                                                        size = 8),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                                  size = 8),
+                      axis.title.y = element_text(face = "bold", 
+                                                  colour = "#990000", 
+                                                  size = 8),
+                      axis.text.y = element_text(size = 8))
+grid.arrange(Total.sulfur.dioxide.1, Total.sulfur.dioxide.2, ncol = 2)
+summary(wine$total.sulfur.dioxide)
+```
+
+Total Sulfer Dioxide has a mean of 46.47 and a median of 38.00 mg/dm^3. The 
+above historgram has a normal distribtion. Outliers, as demonstrated in the 
+box plot, created a positively skewed distribiton and a long tail in the 
+earlier historgram before the Log10 transformation was done.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+Sulphates.1 <- ggplot(wine, aes(x = 1, y = sulphates)) + 
+                      geom_jitter(alpha = 0.1) +
+                      geom_boxplot(alpha = 0.2, color = 'red') +
+                      labs(x = "", y = "Sulphates") +
+                      ggtitle("Boxplot of Sulphates")
+Sulphates.2 <- ggplot(wine, aes(x = sulphates)) + 
+                      geom_histogram(bins = 30, color = "Blue",
+                                     fill = "Orange") +
+                      labs(x = "Sulphates (Log10)", y = "Count") +
+                      ggtitle("Log 10 Histogram of Sulphates") +
+                      scale_x_log10(breaks = c(.33, .62, .6581, 2)) +
+                      theme(axis.title.x = element_text(face = "bold", 
+                                                        colour = "#990000", 
+                                                        size = 8),
+                      axis.text.x = element_text(angle = 90, vjust = 0.5,
+                                                  size = 8),
+                      axis.title.y = element_text(face = "bold", 
+                                                  colour = "#990000", 
+                                                  size = 8),
+                      axis.text.y = element_text(size = 8))
+grid.arrange(Sulphates.1, Sulphates.2, ncol = 2)
+summary(wine$sulphates)
+```
+
+Sulphates have a mean of 0.6581 and a median of 0.6200 g/dm^3. The above
+historgram has a normal distribtion. Outliers, as demonstrated in the box
+plot, created a positively skewed distribiton and a long tail in the earlier
+historgram before the Log10 transformation was done.
+
+Let's take a closer look at Citric Acid.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = citric.acid), data = wine) +
+  geom_histogram(binwidth = .005, color = "Green", fill= "yellow") +
+    labs(x = "Citric Acid", y = "Count") +
+    ggtitle("Frequency Histogram of Citric Acid") +
+    theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                    face = "bold", size = 22, hjust = 0)) +
+    theme(axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                    face = "bold", size = 12))
+summary(wine$citric.acid)
+```
+
+Looks like a slightly bimodal distribution with a mean of 0.271 and median of 
+0.260. Why so many zeros? Does it have to do with wine quality? Let's look into 
+this further in our bivariate analysis.
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+There are 1,559 red wines with 11 variables affecting the quality of the wine 
+(fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, free
+sulfur dioxide, total sulfur dioxide, density, pH, sulphates, and alcohol.) All
+variable are numeric.  Quality was an integer and has been changed to a factor.
+
+### What is/are the main feature(s) of interest in your dataset?
+
+As we have yet to get into correlations, at this point the main interest is
+the combination of many variables it takes to make a great wine. I would like to 
+explore to what degree and with what weight each one influences wine quality. 
+I would like to create a predictive model which can be used to rate wine.
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+The detailed correlations between variables will provide insight into which
+variables have positive and negative effects on the quality score.
+
+### Did you create any new variables from existing variables in the dataset?
+
+So far, I did use the melt() function to make the above histograms more easily.
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+Some variables were normally distributed but others had long tails in which
+case I did a log10 transformation in order to visualize the data better.
+
+I did have to change "Quality" to a factor as well as remove it and use the 
+melt() function to facet wrap all of the variables in one ggplot function.
+
+# Bivariate Plots Section
+
+\n Let's look at a Scatterplot Matrix to give us an high level overview of the
+relationships.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Bivariate_Plots}
+pairs.panels(wine)
+```
+
+Would like to look further into a few graphs which have outliers to make sure
+nothing out of the ordinary is taking place.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(aes(x = volatile.acidity, y = citric.acid), data = wine) +
+  geom_point(alpha = .2) +
+  labs(x = "Volatile Acidity", y = "Citric Acidity") +
+  ggtitle("Volatile vs. Citric Acidity") +
+  geom_smooth() +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0)) +
+  theme(axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 12))
+```
+
+As expected, a few outliers with a high volatile acidity are causing the
+graph to displace points further from the concentration of data points.  The
+two variables have a correlation coefficient of -0.55.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = residual.sugar, y = free.sulfur.dioxide), data = wine) +
+  geom_point(alpha = .2) +
+  labs(x = "Residual Sugar", y = "Free Sulfur Dioxide") +
+  ggtitle("Residual Sugar vs. Free Sulfter Dioxide") +
+  geom_smooth() +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0)) +
+  theme(axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 12))
+```
+
+As expected, a few outliers with a high residual sugar are causing the
+graph to displace points further from the concentration of data points. The
+two variables have a correlation coefficient of 0.19.
+
+The scatterplots confirmed there was no cause of concern as it was merely
+data from outliers.
+
+Let's take a closer look at the variables which have the top 3 highest 
+correlation to Quality - Volatile Acidity, Citric Acid, and Sulphates so
+we can get a better insight into what affects Quality the most.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = volatile.acidity, fill = quality), data = wine) +
+  geom_histogram(binwidth = .01) +
+  labs(x = "Volatile Acidity", y = "Count", color = "Quality Rating") +
+  ggtitle("Volatile Acidity vs. Quality Rating") +
+  scale_x_continuous(breaks = seq(.11,1.58,.7)) +
+  geom_vline(aes(xintercept = mean(volatile.acidity)),
+               color = "red", linetype = "dashed", size = .5) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666"))
+```
+
+As per my expectatations, the average amount of volatile acidity seems to be 
+lower than the mean in higher quality wines because this would make them less
+likely to taste like vinegar.  The two variables have a correlation coefficient
+of -0.39.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = citric.acid, fill = quality), data = wine) +
+  geom_histogram(binwidth = .01) +
+  labs(x = "Citric Acid", y = "Count", color = "Quality Rating") +
+  ggtitle("Citric Acid vs. Quality Rating") +
+  scale_x_continuous(breaks = seq(0,1,.5)) +
+  geom_vline(aes(xintercept = mean(citric.acid)),
+               color = "red", linetype = "dashed", size = .5) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666"))
+```
+
+Seems many types of wines have 0 citric acid but definitely the higher rates
+windes have a healthier dose of it.  This also met my expectations because
+adding citric acid enhances the feeling of freshness to the taste buds. The
+two variables have a correlation coefficient of 0.23.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = sulphates, fill = quality), data = wine) +
+  geom_histogram(binwidth = .01) +
+  labs(x = "Sulphates", y = "Count", color = "Quality Rating") +
+  ggtitle("Sulphates vs. Quality Rating") +
+  scale_x_continuous(breaks = seq(0.33,2,.5)) +
+  geom_vline(aes(xintercept = mean(volatile.acidity)),
+               color = "red", linetype = "dashed", size = .5) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666"))
+
+```
+
+Plotting sulphate count against quality yielded interesting results. On 
+average, higher quality wines have a higher amount of sulphates. The
+two variables have a correlation coefficient of 0.25.
+
+This also met my expectations because in the past whenever I have an older
+or better wine, it usually has a higher sulphate content.
+
+The analysis lead me to wonder what do the best wines have more or less of so
+I decided to look at the trends of the means of these three variables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = quality, y = volatile.acidity, color = quality), data = wine) +
+  geom_jitter(alpha = .3) +
+  geom_boxplot(alpha = .5) +
+  scale_x_discrete(name = "Quality Rating") +
+  labs(x = "Quality Rating", y = "Volatile Acidity") +
+  ggtitle("Volatile Acidity Vs. Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.position = "none") +
+  stat_summary(fun.y = "mean", 
+               geom = "point",
+               alpha = .4,
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+Better wines have lower volatile acidity.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = quality, y = citric.acid, color = quality), data = wine) +
+  geom_jitter(alpha = .3) +
+  geom_boxplot(alpha = .5) +
+  scale_x_discrete(name = "Quality Rating") +
+  labs(x = "Quality Rating", y = "Citric Acid") +
+  ggtitle("Citric Acid Vs. Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.position = "none") +
+  stat_summary(fun.y = "mean", 
+               geom = "point",
+               alpha = .4,
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+Better wines have increasing citric acid.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = quality, y = sulphates, color = quality), data = wine) +
+  geom_jitter(alpha = .3) +
+  geom_boxplot(alpha = .5) +
+  scale_x_discrete(name = "Quality Rating") +
+  labs(x = "Quality Rating", y = "Sulphates") +
+  ggtitle("Sulphates Vs. Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.position = "none") +
+  stat_summary(fun.y = "mean", 
+               geom = "point",
+               alpha = .4,
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+Better wines have more sulphates.
+
+As you can see, all three of these yielded interesting results.  Better wines
+clearly have: 
+
+a.) lower volatile acidity (so they don't taste like Vinegar.)
+b.) higher citric acid levels (giving them that refreshing taste); and 
+c.) high levels of sulphates.
+
+Additionally this lead me to think about the level of alcohol in good quality
+wines.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = quality, y = alcohol / 100, color = quality), data = wine) +
+  geom_jitter(alpha = .3) +
+  geom_boxplot(alpha = .5) +
+  scale_x_discrete(name = "Quality Rating") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Quality Rating", y = "Alcohol") +
+  ggtitle("Alcohol Vs. Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.position = "none") +
+  stat_summary(fun.y = "mean", 
+               geom = "point",
+               alpha = .4,
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+Better wines have more alcohol! How interesting is that! If I hadn't seen this
+I was always under the impression that they would be more balanced but this 
+clearly shows the best wines have the higher alcohol levels.
+
+# Bivariate Analysis
+
+After looking at many variables correleted to each other and to quality,
+it seems that there are numerous factors at play which lead to a good wine.
+I look forward to the multivariate analysis.
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+As discussed after the graphs, better wines have less volatile acidity, higher
+citric acid and sulphate levels, and more alcohol.
+
+After doing some additional research, the average amount of sulphates
+increases as the quality of the wine increases in order to increase the
+antimicrobial effects as better wines need to age for longer.
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+Relationships such as fixed acidity being highly correlated with pH, volatile
+acidity being highly correlated with citric acid which is highly correlated
+with pH and free sulfer dioxide being highly correlated with total sulfer
+dioxide didn't surprise me as they are inherently related.
+
+Another problem that I am noticing is that most of the wines are rated either
+5 or 6 so the majority of the datapoints relate to them so I have to free the 
+scales to adjust for this.
+
+### What was the strongest relationship you found?
+Fixed Acidity has a high correlation of .683 with pH and .672 with Citric Acid.
+Volatile Acidity has a high correlation of .552 with Citric Acid.
+Citric Acid has a high correlation of .542 with pH.
+Free Sulfer Dioxide has a high correltion of .668 with Total Sulfer Dioxide.
+
+
+# Multivariate Plots Section
+
+Let's look at how the top 3 highest correlations to quality interact with one
+another from a multivariate perspective.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
+ggplot(aes(x = sulphates, y = citric.acid, color = quality), data = wine) +
+  geom_point(alpha = .8) +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  scale_color_brewer(type = "div") +
+  labs(x = "Sulphates", y = "Citric Acid", color = "Quality Rating") +
+  ggtitle("Sulphates & Citric Acid vs. Quality Rating") +
+  coord_cartesian(xlim = c(quantile(wine$sulphates, 0), 
+                           quantile(wine$sulphates, .99)), 
+                  ylim = c(quantile(wine$citric.acid, 0), 
+                           quantile(wine$citric.acid, .99))) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666")) +
+  theme_dark()
+```
+
+Higher quality wines have a better balance of citric acid and sulphate levels.
+Most interesting is that the lowest quality wines have the opposite (negative
+slope) levels of sulphates and citric acid than the better quality wines.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = volatile.acidity, y = citric.acid, color = quality), 
+       data = wine) +
+  geom_point(alpha = .8) +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  scale_color_brewer(type = "div", palette = 2) +
+  labs(x = "Volatile Acidity", y = "Citric Acid", color = "Quality Rating") +
+  ggtitle("Volatile Acidity & Citric Acid vs. Quality Rating") +
+  coord_cartesian(xlim = c(quantile(wine$volatile.acidity, 0), 
+                           quantile(wine$volatile.acidity, .99)), 
+                  ylim = c(quantile(wine$citric.acid, 0), 
+                           quantile(wine$citric.acid, .99))) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666")) +
+  theme_dark()
+
+```
+
+Here we can see that better wines have lower volatile acidity levels throughout
+the spectrum of citric acid levels.  This makes sense because although citric
+acid levels are higher in lower quality wines than volatile acidity is present
+in higher quality wines. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x = volatile.acidity, y = sulphates, color = quality), data = wine) +
+  geom_point(alpha = .8) +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  scale_color_brewer(type = "div", palette = 4) +
+  labs(x = "Volatile Acidity", y = "Sulphates", color = "Quality Rating") +
+  ggtitle("Volatile Acidity & Sulphates vs. Quality Rating") +
+  coord_cartesian(xlim = c(quantile(wine$volatile.acidity, 0), 
+                           quantile(wine$volatile.acidity, .99)), 
+                  ylim = c(quantile(wine$sulphates, 0), 
+                           quantile(wine$sulphates, .99))) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666")) +
+  theme_dark()
+```
+
+This further demonstrates the original results that there is lower volatile
+acidity but higher sulphates in better wines.
+
+Let's see if we can make a mathematical/linear model, see how much each variable
+affects wine quality and see how accurate our model turns out to be.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#change wine quality back to numeric for linear modeling
+wine$quality<-as.numeric(wine$quality)
+#create linear model
+x1 <- lm(wine$quality ~ wine$fixed.acidity)
+x2 <- update(x1, ~. + wine$volatile.acidity)
+x3 <- update(x2, ~. + wine$citric.acid)
+x4 <- update(x3, ~. + wine$residual.sugar)
+x5 <- update(x4, ~. + wine$chlorides)
+x6 <- update(x5, ~. + wine$free.sulfur.dioxide)
+x7 <- update(x6, ~. + wine$total.sulfur.dioxide)
+x8 <- update(x7, ~. + wine$density)
+x9 <- update(x8, ~. + wine$pH)
+x10 <- update(x9, ~. + wine$sulphates)
+x11  <- update(x10, ~. + wine$alcohol)
+mtable(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, sdigits = 5)
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+As earlier thoughts and the three graphs above demonstrate:
+Better wines have ore citric acid, alchohol and more sulphates with
+less volatile acidity.
+
+### Were there any interesting or surprising interactions between features?
+
+I added facets of alochol buckets (10%, 11%, 12%, etc) but alochol content
+seems to be medium to high for good wines - a bit less stark than alochol vs
+quality showed when it was a bivariate analysis.
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+
+I did create a linear model.  Through this analysis I have learnt that no 1, 2,
+or 3 variables make up a good wine.  The variables in the linear model only 
+account for 36% of the variance.  This is after 11 variables contribute.  So the
+limitation for the linear model is that other variables are accounting towards
+the rating of the wine which are not included in the data set.  The strength
+of the model is that we can see which factors do (although gradual) make a 
+contribution towards accounting for the variance and we have accounted for 36%
+of those factors.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One}
+# Reload the Data
+wine <- read.csv('wineQualityReds.csv', header = T, row.names = 1, 
+                 check.names = F)
+# Turn Quality into a factor
+wine$quality <- as.factor(wine$quality)
+
+ggplot(aes(x = volatile.acidity, fill = quality), data = wine) +
+  geom_histogram(binwidth = .01) +
+  labs(x = "Volatile Acidity (g / dm^3)", y = "Count", 
+       color = "Quality Rating") +
+  ggtitle("Volatile Acidity vs. Quality Rating") +
+  scale_x_continuous(breaks = seq(.11,1.58,.7)) +
+  geom_vline(aes(xintercept = mean(volatile.acidity)),
+               color = "red", linetype = "dashed", size = .5) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666"))
+```
+
+### Description One
+This plot clearly shows that even though all wines have volatile acidity, there
+is a clear trend towards better wines having less of it as observed by the
+better rated wines being further from the mean.
+
+### Plot Two
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
+ggplot(aes(x = quality, y = alcohol / 100, color = quality), data = wine) +
+  geom_jitter(alpha = .3) +
+  geom_boxplot(alpha = .5) +
+  scale_x_discrete(name = "Quality Rating") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Quality Rating", y = "Alcohol") +
+  ggtitle("Alcohol Vs. Quality Rating") +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.position = "none") +
+  stat_summary(fun.y = "mean", 
+               geom = "point",
+               alpha = .4,
+               color = "red", 
+               shape = 8, 
+               size = 4)
+```
+
+### Description Two
+Higher quality wines in our sample do have higher percentages of alcohol.
+
+### Plot Three
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three}
+ggplot(aes(x = sulphates, y = citric.acid, color = quality), data = wine) +
+  geom_point(alpha = .8) +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  scale_color_brewer(type = "div") +
+  labs(x = "Sulphates (g / dm^3)", y = "Citric Acid (g / dm^3)",
+       color = "Quality Rating") +
+  ggtitle("Sulphates & Citric Acid vs. Quality Rating") +
+  coord_cartesian(xlim = c(quantile(wine$sulphates, 0), 
+                           quantile(wine$sulphates, .99)), 
+                  ylim = c(quantile(wine$citric.acid, 0), 
+                           quantile(wine$citric.acid, .99))) +
+  theme(plot.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                  face = "bold", size = 22, hjust = 0),
+       axis.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                 face = "bold", size = 12),
+       legend.title = element_text(family = "Trebuchet MS", color = "#666666", 
+                                   face = "bold", size = 12),
+       legend.text = element_text(family = "Trebuchet MS", color = "#666666")) +
+  theme_dark()
+```
+
+### Description Three
+A nice way to visualize good wines have a healthy amount of sulphates as well
+as citric acid.  Conversely you can also see that poor rated wines have the
+opposite characteristics of each.
+
+------
+
+# Reflection
+
+I started off hoping this dataset would be like the diamonds dataset, where
+each "C" has a meaningful impact on the target (in that case, price) and in the
+end accounted for almost 99% of the variance.
+
+This dataset was very different.  It taught me how delicate wines really are.
+I completely understand why there is a huge market for rare wines because
+even with 11 variables above we could only account for ~36% of the variance!
+This was very suprising to me and lead me to research the topic further.
+Researching online shows that everything from climate to how you trim the grape
+vines impacts wine quality.
+
+Struggles: I definitely struggled to clean up the graphs but learned a lot in
+the process.  Each layer in ggplot can be very powerful.  Additionally although
+it might not seem like there was a lot of data wrangling, there was!  I cut
+numerous variables only to revert back to the original dataset because I didn't
+want to clutter this report.  Changing data types form numeric to factors 
+for the analysis and then back to numeric for the linear model and then back to
+factors for the remaining graphs keep me quite in touch with the structure of
+the dataset and made me realize its importance.  I practiced using the melt() 
+function as well as the gather() funciton and then stuck with melt() to combine
+12 columns in 2 so that ggplot could easily create the histogram grids.
+Changing axis fonts, labels, sizes taught me about using the theme funciton.
+Adding colors and color scales was good practice and made the data stand out
+better as well as made it more interesting visually.
+
+What went well was that we did find numerous trends which impact a good quality
+wine, such as citric acid and sulphate levels.  As mentioned above, a larger
+dataset with additional characteristics would be fascinating to look at with
+the goal of creating an improved linear model.
